@@ -1,0 +1,51 @@
+/* src/App.css */
+.App {
+text-align: center;
+}
+
+/* Custom scrollbar for church list */
+.space-y-2::-webkit-scrollbar {
+width: 8px;
+}
+
+.space-y-2::-webkit-scrollbar-track {
+background: #f1f5f9;
+border-radius: 4px;
+}
+
+.space-y-2::-webkit-scrollbar-thumb {
+background: #cbd5e1;
+border-radius: 4px;
+}
+
+.space-y-2::-webkit-scrollbar-thumb:hover {
+background: #94a3b8;
+}
+
+/* Responsive chart container */
+.recharts-responsive-container {
+min-height: 400px;
+}
+
+/* Loading animation */
+@keyframes spin {
+0% { transform: rotate(0deg); }
+100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+animation: spin 1s linear infinite;
+}
+
+/* Smooth transitions */
+
+- {
+  transition: colors 0.2s ease-in-out;
+  }
+
+/* Focus styles for accessibility */
+button:focus,
+input:focus {
+outline: 2px solid #3b82f6;
+outline-offset: 2px;
+}
