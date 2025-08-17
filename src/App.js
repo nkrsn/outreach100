@@ -1,19 +1,67 @@
-// src/App.js
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Search, Download, TrendingUp, TrendingDown, Church, Settings } from 'lucide-react';
-import './App.css';
+import { Search, Download, TrendingUp, TrendingDown, Church } from 'lucide-react';
 
 const ChurchAttendanceAnalyzer = () => {
   const [churchData, setChurchData] = useState([]);
   const [selectedChurches, setSelectedChurches] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [scrapingStatus, setScrapingStatus] = useState('');
-  const [backendUrl, setBackendUrl] = useState(process.env.REACT_APP_BACKEND_URL || '');
-  const [useBackend, setUseBackend] = useState(!!process.env.REACT_APP_BACKEND_URL);
-  const [viewMode, setViewMode] = useState('attendance');
-  const [showSettings, setShowSettings] = useState(false);
+  const [backendUrl, setBackendUrl] = useState(''); // Will be set to Railway URL
+  const [useBackend, setUseBackend] = useState(false);
+  const [viewMode, setViewMode] = useState('attendance'); // 'attendance' or 'ranking'
+
+  // Sample data structure - this would be populated by scraping
+  const sampleData = [
+    {
+      name: "Life.Church",
+      location: "Edmond, OK",
+      pastor: "Craig Groeschel",
+      data: [
+        { year: 2020, attendance: 42000, ranking: 1 },
+        { year: 2021, attendance: 40000, ranking: 1 },
+        { year: 2022, attendance: 41000, ranking: 1 },
+        { year: 2023, attendance: 43000, ranking: 1 },
+        { year: 2024, attendance: 45000, ranking: 1 }
+      ]
+    },
+    {
+      name: "Church of the Highlands",
+      location: "Birmingham, AL", 
+      pastor: "Chris Hodges",
+      data: [
+        { year: 2020, attendance: 38000, ranking: 2 },
+        { year: 2021, attendance: 36000, ranking: 2 },
+        { year: 2022, attendance: 39000, ranking: 2 },
+        { year: 2023, attendance: 41000, ranking: 2 },
+        { year: 2024, attendance: 42000, ranking: 2 }
+      ]
+    },
+    {
+      name: "CCV (Christ's Church of the Valley)",
+      location: "Peoria, AZ",
+      pastor: "Ashley Wooldridge", 
+      data: [
+        { year: 2020, attendance: 25000, ranking: 8 },
+        { year: 2021, attendance: 28000, ranking: 6 },
+        { year: 2022, attendance: 32000, ranking: 4 },
+        { year: 2023, attendance: 38000, ranking: 3 },
+        { year: 2024, attendance: 41000, ranking: 3 }
+      ]
+    },
+    {
+      name: "Lakewood Church",
+      location: "Houston, TX",
+      pastor: "Joel Osteen",
+      data: [
+        { year: 2020, attendance: 35000, ranking: 4 },
+        { year: 2021, attendance: 33000, ranking: 4 },
+        { year: 2022, attendance: 36000, ranking: 4 },
+        { year: 2023, attendance: 37000, ranking: 4 },
+        { year: 2024, attendance: 38000, ranking: 4 }
+      ]
+    }
+  ];
 
   // Enhanced sample data with real church information for immediate functionality
   const generateSampleData = () => {
@@ -51,26 +99,29 @@ const ChurchAttendanceAnalyzer = () => {
       
       const data = [];
       for (let year = 2015; year <= 2024; year++) {
+        // Create realistic trends with some churches growing, others declining
         let yearMultiplier = 1;
         
+        // Simulate different growth patterns
         if (church.name.includes("CCV") || church.name.includes("Eleven22") || church.name.includes("Eagle Brook")) {
-          yearMultiplier = 0.7 + (year - 2015) * 0.08;
+          yearMultiplier = 0.7 + (year - 2015) * 0.08; // Fast growing churches
         } else if (church.name.includes("Willow Creek") || church.name.includes("Saddleback")) {
-          yearMultiplier = 1.2 - (year - 2015) * 0.03;
+          yearMultiplier = 1.2 - (year - 2015) * 0.03; // Declining churches
         } else {
-          yearMultiplier = 0.9 + Math.sin((year - 2015) * 0.5) * 0.15;
+          yearMultiplier = 0.9 + Math.sin((year - 2015) * 0.5) * 0.15; // Cyclical growth
         }
         
+        // COVID impact in 2020-2021
         if (year === 2020) yearMultiplier *= 0.7;
         if (year === 2021) yearMultiplier *= 0.8;
-        if (year === 2022) yearMultiplier *= 1.1;
+        if (year === 2022) yearMultiplier *= 1.1; // Recovery bounce
         
         const attendance = Math.max(1000, Math.floor(baseAttendance * yearMultiplier + (Math.random() - 0.5) * 2000));
         
         data.push({
           year,
           attendance,
-          ranking: baseRanking
+          ranking: baseRanking // We'll recalculate rankings based on attendance
         });
       }
       
@@ -84,8 +135,10 @@ const ChurchAttendanceAnalyzer = () => {
   };
 
   useEffect(() => {
+    // Load sample data immediately for functionality
     const sampleData = generateSampleData();
     
+    // Recalculate rankings for each year based on attendance
     const years = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024];
     years.forEach(year => {
       const yearData = sampleData.map(church => ({
@@ -102,7 +155,7 @@ const ChurchAttendanceAnalyzer = () => {
     });
     
     setChurchData(sampleData);
-    setScrapingStatus('Sample data loaded. Configure backend URL and click "Scrape Live Data" for real data.');
+    setScrapingStatus('Sample data loaded. Click "Scrape Live Data" to attempt real data collection.');
   }, []);
 
   const scrapeChurchData = async () => {
@@ -111,6 +164,7 @@ const ChurchAttendanceAnalyzer = () => {
     
     try {
       if (useBackend && backendUrl) {
+        // Use Railway backend
         setScrapingStatus('Connecting to Railway backend...');
         
         const response = await fetch(`${backendUrl}/api/scrape-all`);
@@ -133,7 +187,32 @@ const ChurchAttendanceAnalyzer = () => {
         }
         
       } else {
-        setScrapingStatus('❌ No backend configured. Browser-based scraping is blocked by CORS. Please configure Railway backend URL.');
+        // Fallback: Attempt browser-based scraping (will likely fail due to CORS)
+        setScrapingStatus('⚠️  Attempting browser-based scraping (likely to fail due to CORS)...');
+        
+        const years = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024];
+        let successCount = 0;
+        
+        for (const year of years) {
+          try {
+            // Try with CORS proxy
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`https://outreach100.com/largest-churches-in-america/${year}`)}`;
+            const response = await fetch(proxyUrl);
+            
+            if (response.ok) {
+              successCount++;
+              setScrapingStatus(`✅ Successfully scraped ${year}`);
+            } else {
+              throw new Error(`HTTP ${response.status}`);
+            }
+          } catch (error) {
+            setScrapingStatus(`❌ Failed to scrape ${year}: ${error.message}`);
+          }
+        }
+        
+        if (successCount === 0) {
+          setScrapingStatus('❌ Browser-based scraping failed due to CORS restrictions. Deploy the Railway backend for live data!');
+        }
       }
       
     } catch (error) {
@@ -141,6 +220,175 @@ const ChurchAttendanceAnalyzer = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const scrapeYearData = async (year) => {
+    const churches = [];
+    let page = 1;
+    let hasMorePages = true;
+    
+    while (hasMorePages && page <= 10) { // Limit to 10 pages to avoid infinite loops
+      try {
+        const url = page === 1 
+          ? `https://outreach100.com/largest-churches-in-america/${year}`
+          : `https://outreach100.com/largest-churches-in-america/${year}?page=${page}`;
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          if (page === 1) {
+            throw new Error(`Failed to fetch ${year} data: ${response.status}`);
+          } else {
+            // If we can't fetch a subsequent page, we probably reached the end
+            break;
+          }
+        }
+        
+        const html = await response.text();
+        const pageChurches = parseChurchesFromHTML(html, year);
+        
+        if (pageChurches.length === 0) {
+          hasMorePages = false;
+        } else {
+          churches.push(...pageChurches);
+          page++;
+        }
+        
+        // Add small delay between requests to be respectful
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+      } catch (error) {
+        if (page === 1) {
+          throw error; // Re-throw if we can't even get the first page
+        } else {
+          console.warn(`Failed to fetch page ${page} for ${year}:`, error);
+          break;
+        }
+      }
+    }
+    
+    return churches;
+  };
+
+  const parseChurchesFromHTML = (html, year) => {
+    const churches = [];
+    
+    // Create a temporary DOM element to parse HTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    // Look for church entries - they appear to be in anchor tags with specific structure
+    const churchLinks = doc.querySelectorAll('a[href*="/churches/"]');
+    
+    churchLinks.forEach((link, index) => {
+      try {
+        // Get the ranking number (appears before the link)
+        const rankingElement = link.previousElementSibling;
+        let ranking = null;
+        
+        if (rankingElement && rankingElement.textContent.trim()) {
+          const rankText = rankingElement.textContent.trim();
+          const rankMatch = rankText.match(/\d+/);
+          if (rankMatch) {
+            ranking = parseInt(rankMatch[0]);
+          }
+        }
+        
+        // If we can't find ranking in previous sibling, try to extract from context
+        if (!ranking) {
+          // Look for numbered elements in the vicinity
+          const parent = link.closest('div, section, article');
+          if (parent) {
+            const numberElements = parent.querySelectorAll('*');
+            for (let elem of numberElements) {
+              const text = elem.textContent.trim();
+              if (/^\d+$/.test(text) && parseInt(text) <= 100) {
+                ranking = parseInt(text);
+                break;
+              }
+            }
+          }
+        }
+        
+        // Fallback: use the index + 1 (though this might not be accurate for paginated content)
+        if (!ranking) {
+          ranking = index + 1;
+        }
+        
+        // Extract church name, location, and pastor
+        const churchContainer = link.closest('div, section, article') || link;
+        
+        // Church name is usually in the link text or a nearby heading
+        let churchName = link.textContent.trim();
+        if (!churchName) {
+          const nameElement = churchContainer.querySelector('h1, h2, h3, h4, h5, h6');
+          if (nameElement) {
+            churchName = nameElement.textContent.trim();
+          }
+        }
+        
+        // Location and pastor are usually in nearby text elements
+        let location = '';
+        let pastor = '';
+        
+        // Look for text patterns that indicate location (City, State format)
+        const textElements = churchContainer.querySelectorAll('*');
+        textElements.forEach(elem => {
+          const text = elem.textContent.trim();
+          
+          // Location pattern: "City, State" or "City, ST"
+          if (/^[A-Za-z\s]+,\s*[A-Z]{2,}$/.test(text) && text.length < 50) {
+            location = text;
+          }
+          
+          // Pastor pattern: usually preceded by a dash or contains "pastor" keywords
+          if (text.includes('-') && text.length < 100 && text.length > 5) {
+            const parts = text.split('-');
+            if (parts.length === 2) {
+              const possiblePastor = parts[1].trim();
+              if (possiblePastor && !possiblePastor.includes(',') && possiblePastor.length < 50) {
+                pastor = possiblePastor;
+              }
+            }
+          }
+        });
+        
+        // Extract attendance if available (this might be in specific elements)
+        let attendance = null;
+        
+        // Look for attendance numbers in the church container
+        const attendanceElements = churchContainer.querySelectorAll('*');
+        attendanceElements.forEach(elem => {
+          const text = elem.textContent.trim();
+          
+          // Look for large numbers that could be attendance
+          const numberMatch = text.match(/\b(\d{3,6})\b/);
+          if (numberMatch && !attendance) {
+            const number = parseInt(numberMatch[1]);
+            if (number >= 1000 && number <= 100000) {
+              attendance = number;
+            }
+          }
+        });
+        
+        // If we have at least a name and ranking, add the church
+        if (churchName && ranking) {
+          churches.push({
+            name: churchName,
+            location: location || 'Location not found',
+            pastor: pastor || 'Pastor not found',
+            attendance: attendance,
+            ranking: ranking
+          });
+        }
+        
+      } catch (error) {
+        console.warn('Error parsing church data:', error);
+      }
+    });
+    
+    // Sort by ranking to ensure proper order
+    return churches.sort((a, b) => a.ranking - b.ranking);
   };
 
   const filteredChurches = churchData.filter(church =>
@@ -187,7 +435,7 @@ const ChurchAttendanceAnalyzer = () => {
     if (viewMode === 'attendance') {
       return latest.attendance > previous.attendance ? 'up' : 'down';
     } else {
-      return latest.ranking < previous.ranking ? 'up' : 'down';
+      return latest.ranking < previous.ranking ? 'up' : 'down'; // Lower ranking number is better
     }
   };
 
@@ -202,23 +450,14 @@ const ChurchAttendanceAnalyzer = () => {
               <Church className="w-8 h-8 text-blue-600" />
               <h1 className="text-3xl font-bold text-gray-900">Church Attendance Analyzer (2015-2024)</h1>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                Settings
-              </button>
-              <button
-                onClick={scrapeChurchData}
-                disabled={loading}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                {loading ? 'Scraping...' : 'Scrape Live Data'}
-              </button>
-            </div>
+            <button
+              onClick={scrapeChurchData}
+              disabled={loading}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              {loading ? 'Scraping...' : 'Scrape Latest Data'}
+            </button>
           </div>
           
           {scrapingStatus && (
@@ -227,42 +466,42 @@ const ChurchAttendanceAnalyzer = () => {
             </div>
           )}
 
-          {showSettings && (
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-              <h3 className="font-medium text-yellow-800 mb-3">🚀 Railway Backend Configuration</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-yellow-700 mb-1">
-                    Backend URL:
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://your-backend.railway.app"
-                    value={backendUrl}
-                    onChange={(e) => setBackendUrl(e.target.value)}
-                    className="w-full px-3 py-2 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="useBackend"
-                    checked={useBackend}
-                    onChange={(e) => setUseBackend(e.target.checked)}
-                    className="w-4 h-4 text-yellow-600"
-                  />
-                  <label htmlFor="useBackend" className="text-sm text-yellow-700">
-                    Use Railway backend for live data scraping
-                  </label>
-                </div>
-                <p className="text-xs text-yellow-600">
-                  Deploy the provided Node.js backend to Railway, then enter the URL above to get real live data!
-                </p>
+          {/* Backend Configuration */}
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <h3 className="font-medium text-yellow-800 mb-2">🚀 Railway Backend Setup</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-yellow-700 mb-1">
+                  Railway Backend URL (optional - for live data):
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://your-app-name.railway.app"
+                  value={backendUrl}
+                  onChange={(e) => setBackendUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm"
+                />
               </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="useBackend"
+                  checked={useBackend}
+                  onChange={(e) => setUseBackend(e.target.checked)}
+                  className="w-4 h-4 text-yellow-600"
+                />
+                <label htmlFor="useBackend" className="text-sm text-yellow-700">
+                  Use Railway backend for live data scraping
+                </label>
+              </div>
+              <p className="text-xs text-yellow-600">
+                Deploy the provided Node.js backend to Railway, then enter the URL above to get real live data!
+              </p>
             </div>
-          )}
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Search and Selection Panel */}
             <div className="lg:col-span-1">
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -344,6 +583,7 @@ const ChurchAttendanceAnalyzer = () => {
               </div>
             </div>
 
+            {/* Chart Panel */}
             <div className="lg:col-span-2">
               <div className="bg-white p-6 rounded-lg border">
                 <h2 className="text-xl font-semibold mb-4">
@@ -373,7 +613,7 @@ const ChurchAttendanceAnalyzer = () => {
                           angle: -90, 
                           position: 'insideLeft' 
                         }}
-                        reversed={viewMode === 'ranking'}
+                        reversed={viewMode === 'ranking'} // Lower ranking numbers are better
                       />
                       <Tooltip 
                         formatter={(value, name) => [
@@ -404,6 +644,7 @@ const ChurchAttendanceAnalyzer = () => {
           </div>
         </div>
 
+        {/* Summary Statistics */}
         {selectedChurches.length > 0 && (
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Summary Statistics</h2>
